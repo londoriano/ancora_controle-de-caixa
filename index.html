@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Controle de Caixa Âncora</title>
+  <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════ SPLASH ═══════════════════════════ -->
+<div id="splash-screen">
+  <div class="splash-overlay"></div>
+  <div class="splash-content">
+    <div class="splash-anchor-icon">⚓</div>
+    <h1 class="splash-title">Controle de Caixa</h1>
+    <h2 class="splash-brand">Âncora</h2>
+    <p class="splash-subtitle">Gestão financeira simples e eficiente para o seu negócio</p>
+    <button class="btn-splash" onclick="closeSplash()">
+      <i class="bi bi-play-fill me-2"></i>Acessar Sistema
+    </button>
+    <div class="splash-footer">
+      <span>Desenvolvido por</span> <strong>Âncora Consultoria Financeira</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ APP ═══════════════════════════ -->
+<div id="app" class="d-none">
+
+  <nav class="topbar">
+    <div class="topbar-brand">
+      <span class="topbar-anchor">⚓</span>
+      <div>
+        <div class="topbar-title">Controle de Caixa Âncora</div>
+        <div class="topbar-company" id="topbar-company-name">Minha Empresa</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-date" id="topbar-date"></span>
+      <button class="btn-admin" onclick="openAdmin()"><i class="bi bi-gear-fill me-1"></i>Admin</button>
+    </div>
+  </nav>
+
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('vendas')"      id="tab-vendas"><i class="bi bi-cart3"></i><span>Vendas</span></button>
+    <button class="tab-btn"        onclick="switchTab('produtos')"    id="tab-produtos"><i class="bi bi-box-seam"></i><span>Produtos</span></button>
+    <button class="tab-btn"        onclick="switchTab('clientes')"    id="tab-clientes"><i class="bi bi-people"></i><span>Clientes</span></button>
+    <button class="tab-btn"        onclick="switchTab('relatorios')"  id="tab-relatorios"><i class="bi bi-bar-chart-line"></i><span>Relatórios</span></button>
+    <button class="tab-btn tab-diagnostico" onclick="switchTab('diagnostico')" id="tab-diagnostico"><i class="bi bi-graph-up-arrow"></i><span>Diagnóstico Gratuito</span></button>
+  </div>
+
+  <div class="content-area">
+
+    <!-- ══ VENDAS ══ -->
+    <div id="tab-content-vendas" class="tab-content-panel active">
+      <div class="panel-header">
+        <h3><i class="bi bi-cart3 me-2"></i>Nova Venda</h3>
+        <button class="btn-outline-ancora" onclick="resetVenda()"><i class="bi bi-arrow-counterclockwise me-1"></i>Nova Venda</button>
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="card-ancora">
+            <div class="card-ancora-header">Itens da Venda</div>
+            <div class="card-ancora-body">
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6" style="position:relative">
+                  <label class="form-label-ancora">Buscar Produto <span class="hint-tecla">↵ adiciona</span></label>
+                  <div class="input-group">
+                    <input type="text" id="busca-produto" class="form-control-ancora" placeholder="Nome ou código..."
+                      oninput="filtrarProdutos()" onkeydown="onKeyBusca(event)" autocomplete="off" />
+                    <button class="btn-icon-ancora" onclick="limparBuscaProduto()"><i class="bi bi-x"></i></button>
+                  </div>
+                  <div id="dropdown-produtos" class="produto-dropdown d-none"></div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label-ancora">Qtd / Peso</label>
+                  <input type="number" id="venda-qtd" class="form-control-ancora" value="1" min="0.001" step="0.001"
+                    onkeydown="onKeyQtd(event)" />
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                  <button class="btn-ancora w-100" onclick="adicionarProdutoVenda()"><i class="bi bi-plus-lg"></i> Adicionar</button>
+                </div>
+              </div>
+
+              <hr class="divider-ancora" />
+
+              <div class="row g-2 mb-3">
+                <div class="col-md-5">
+                  <label class="form-label-ancora">Descrição Avulsa <span class="hint-tecla">opcional</span></label>
+                  <input type="text" id="avulso-desc" class="form-control-ancora" placeholder="Ex: Serviço..."
+                    onkeydown="onKeyAvulso(event)" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label-ancora">Valor R$ <span class="hint-tecla">↵ adiciona</span></label>
+                  <input type="number" id="avulso-valor" class="form-control-ancora" placeholder="0,00" min="0" step="0.01"
+                    onkeydown="onKeyAvulso(event)" />
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                  <button class="btn-ancora-outline w-100" onclick="adicionarAvulso()"><i class="bi bi-plus-lg"></i> Avulso</button>
+                </div>
+              </div>
+
+              <div class="table-ancora-wrap">
+                <table class="table-ancora">
+                  <thead><tr><th>Item</th><th class="text-center">Qtd</th><th class="text-end">Unit.</th><th class="text-end">Total</th><th></th></tr></thead>
+                  <tbody id="venda-itens-tbody">
+                    <tr><td colspan="5" class="text-center text-muted py-4">
+                      <i class="bi bi-cart-x fs-3 d-block mb-2"></i>Nenhum item adicionado
+                    </td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card-ancora mb-3">
+            <div class="card-ancora-header">Informações da Venda</div>
+            <div class="card-ancora-body">
+              <div class="mb-3">
+                <label class="form-label-ancora">Cliente (opcional)</label>
+                <select id="venda-cliente" class="form-control-ancora"><option value="">— Consumidor Final —</option></select>
+              </div>
+              <div class="mb-0">
+                <label class="form-label-ancora">Desconto</label>
+                <div class="input-group">
+                  <input type="number" id="venda-desconto-valor" class="form-control-ancora" placeholder="0,00" min="0" step="0.01" oninput="calcularTotais()" />
+                  <select id="venda-desconto-tipo" class="form-control-ancora" style="max-width:80px" onchange="calcularTotais()">
+                    <option value="R$">R$</option><option value="%">%</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-ancora mb-3">
+            <div class="card-ancora-header">Resumo</div>
+            <div class="card-ancora-body">
+              <div class="resumo-linha"><span>Subtotal</span><span id="resumo-subtotal">R$ 0,00</span></div>
+              <div class="resumo-linha" style="color:var(--red)"><span>Desconto</span><span id="resumo-desconto">- R$ 0,00</span></div>
+              <div class="resumo-linha resumo-total"><span>TOTAL</span><span id="resumo-total">R$ 0,00</span></div>
+            </div>
+          </div>
+
+          <div class="card-ancora">
+            <div class="card-ancora-header d-flex justify-content-between align-items-center">
+              <span>Pagamento</span>
+              <button class="btn-add-pag" onclick="adicionarFormaPagamento()"><i class="bi bi-plus-circle me-1"></i>+ Forma</button>
+            </div>
+            <div class="card-ancora-body">
+              <div id="pagamentos-lista"></div>
+              <div id="resumo-pagamentos" class="resumo-pag-wrap d-none">
+                <div class="resumo-linha"><span>Total Pago</span><span id="total-pago-val" style="color:var(--green-light)">R$ 0,00</span></div>
+                <div class="resumo-linha"><span>Troco (dinheiro)</span><span id="troco-geral-val" style="color:var(--gold)">R$ 0,00</span></div>
+              </div>
+              <button class="btn-ancora-success w-100 py-2 mt-3" onclick="finalizarVenda()">
+                <i class="bi bi-check-circle-fill me-2"></i>Finalizar Venda
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PRODUTOS ══ -->
+    <div id="tab-content-produtos" class="tab-content-panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-box-seam me-2"></i>Produtos</h3>
+        <button class="btn-ancora" onclick="openModalProduto()"><i class="bi bi-plus-lg me-1"></i>Novo Produto</button>
+      </div>
+      <div class="card-ancora">
+        <div class="card-ancora-body">
+          <div class="row mb-3"><div class="col-md-4">
+            <input type="text" id="busca-prod-lista" class="form-control-ancora" placeholder="🔍 Buscar produto..." oninput="renderProdutos()" />
+          </div></div>
+          <div class="table-ancora-wrap">
+            <table class="table-ancora">
+              <thead><tr><th>Código</th><th>Nome</th><th class="text-center">Unidade</th><th class="text-end">Valor de Venda</th><th class="text-center">Ações</th></tr></thead>
+              <tbody id="produtos-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CLIENTES ══ -->
+    <div id="tab-content-clientes" class="tab-content-panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-people me-2"></i>Clientes</h3>
+        <button class="btn-ancora" onclick="openModalCliente()"><i class="bi bi-plus-lg me-1"></i>Novo Cliente</button>
+      </div>
+      <div class="card-ancora">
+        <div class="card-ancora-body">
+          <div class="row mb-3"><div class="col-md-4">
+            <input type="text" id="busca-cliente-lista" class="form-control-ancora" placeholder="🔍 Buscar cliente..." oninput="renderClientes()" />
+          </div></div>
+          <div class="table-ancora-wrap">
+            <table class="table-ancora">
+              <thead><tr><th>Nome</th><th>Telefone</th><th>Endereço</th><th class="text-center">Ações</th></tr></thead>
+              <tbody id="clientes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RELATÓRIOS ══ -->
+    <div id="tab-content-relatorios" class="tab-content-panel">
+      <div class="panel-header"><h3><i class="bi bi-bar-chart-line me-2"></i>Relatórios</h3></div>
+
+      <div id="relatorio-bloqueado" class="d-none">
+        <div class="pin-lock-wrap">
+          <div class="pin-lock-card">
+            <i class="bi bi-lock-fill pin-lock-icon"></i>
+            <h4>Relatórios Bloqueados</h4>
+            <p>Digite o PIN de acesso para visualizar os relatórios.</p>
+            <input type="password" id="pin-relatorio-input" class="form-control-ancora text-center"
+              maxlength="8" placeholder="••••"
+              style="max-width:160px;margin:0 auto 16px;font-size:1.3rem;letter-spacing:8px"
+              onkeydown="if(event.key==='Enter') verificarPinRelatorio()" />
+            <button class="btn-ancora" onclick="verificarPinRelatorio()"><i class="bi bi-unlock me-1"></i>Desbloquear</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="relatorio-conteudo">
+
+        <div class="card p-4 mt-4" style="border-left: 4px solid var(--red);">
+  <h5 class="mb-1"><i class="bi bi-shield-exclamation"></i> Gestão de Dados e Segurança</h5>
+  <p class="text-muted small mb-3">Exporte um arquivo de segurança contendo todo o banco de dados do sistema. A restauração é destrutiva e sobrescreverá qualquer operação atual.</p>
+  
+  <div class="d-flex gap-3">
+    <button class="btn btn-outline-primary" onclick="realizarBackup()">
+      <i class="bi bi-download"></i> Exportar Backup (JSON)
+    </button>
+    
+    <label class="btn btn-outline-danger mb-0">
+      <i class="bi bi-upload"></i> Restaurar Sistema
+      <input type="file" class="d-none" id="file-restore" accept=".json" onchange="restaurarBackup(event)">
+    </label>
+  </div>
+</div>
+
+        <div class="card-ancora mb-3">
+          <div class="card-ancora-body">
+            <div class="periodo-btns">
+              <button class="btn-periodo active" onclick="setPeriodo('dia')"       id="periodo-dia">Hoje</button>
+              <button class="btn-periodo"        onclick="setPeriodo('semana')"    id="periodo-semana">Semana</button>
+              <button class="btn-periodo"        onclick="setPeriodo('mes')"       id="periodo-mes">Mês</button>
+              <button class="btn-periodo"        onclick="setPeriodo('trimestre')" id="periodo-trimestre">Trimestre</button>
+              <button class="btn-periodo"        onclick="setPeriodo('ano')"       id="periodo-ano">Ano</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card"><div class="kpi-icon"><i class="bi bi-bag-check"></i></div><div class="kpi-valor" id="kpi-vendas">0</div><div class="kpi-label">Vendas</div></div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card kpi-green"><div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div><div class="kpi-valor" id="kpi-receita">R$ 0,00</div><div class="kpi-label">Receita Total</div></div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card kpi-blue"><div class="kpi-icon"><i class="bi bi-graph-up"></i></div><div class="kpi-valor" id="kpi-ticket">R$ 0,00</div><div class="kpi-label">Ticket Médio</div></div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card kpi-orange"><div class="kpi-icon"><i class="bi bi-percent"></i></div><div class="kpi-valor" id="kpi-desconto">R$ 0,00</div><div class="kpi-label">Descontos Dados</div></div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-lg-8">
+            <div class="card-ancora">
+              <div class="card-ancora-header">Vendas por Período</div>
+              <div class="card-ancora-body"><canvas id="chart-vendas" height="120"></canvas></div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card-ancora">
+              <div class="card-ancora-header">Métodos de Pagamento</div>
+              <div class="card-ancora-body"><canvas id="chart-pagamentos" height="180"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ranking -->
+        <div class="card-ancora mb-3">
+          <div class="card-ancora-header"><i class="bi bi-trophy me-2" style="color:var(--gold)"></i>Top 10 Melhores Clientes do Período</div>
+          <div class="card-ancora-body">
+            <div class="table-ancora-wrap">
+              <table class="table-ancora">
+                <thead><tr><th style="width:40px">#</th><th>Cliente</th><th class="text-center">Compras</th><th class="text-end">Total Gasto</th><th class="text-end">Ticket Médio</th></tr></thead>
+                <tbody id="ranking-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="card-ancora">
+          <div class="card-ancora-header">Histórico de Vendas</div>
+          <div class="card-ancora-body">
+            <div class="table-ancora-wrap">
+              <table class="table-ancora">
+                <thead><tr>
+                  <th>Data/Hora</th><th>Cliente</th><th>Itens</th>
+                  <th>Pagamento</th><th class="text-end">Desconto</th>
+                  <th class="text-end">Total</th><th></th>
+                </tr></thead>
+                <tbody id="relatorio-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DIAGNÓSTICO ══ -->
+    <div id="tab-content-diagnostico" class="tab-content-panel">
+      <div class="diagnostico-wrap">
+        <div class="diagnostico-card">
+          <div class="diagnostico-icon">⚓</div>
+          <h2 class="diagnostico-title">Diagnóstico Financeiro Gratuito</h2>
+          <p class="diagnostico-subtitle">Descubra o potencial financeiro escondido no seu negócio</p>
+          <div class="diagnostico-beneficios">
+            <div class="beneficio-item"><i class="bi bi-check-circle-fill"></i><span>Análise completa do fluxo de caixa</span></div>
+            <div class="beneficio-item"><i class="bi bi-check-circle-fill"></i><span>Identificação de gargalos financeiros</span></div>
+            <div class="beneficio-item"><i class="bi bi-check-circle-fill"></i><span>Oportunidades de redução de custos e impostos</span></div>
+            <div class="beneficio-item"><i class="bi bi-check-circle-fill"></i><span>Planejamento tributário personalizado</span></div>
+            <div class="beneficio-item"><i class="bi bi-check-circle-fill"></i><span>Estratégias para aumento de lucratividade</span></div>
+            <div class="beneficio-item"><i class="bi bi-check-circle-fill"></i><span>100% gratuito, sem compromisso</span></div>
+          </div>
+          <a href="https://meetings.hubspot.com/ancora-consultoria" target="_blank" class="btn-diagnostico">
+            <i class="bi bi-calendar-check me-2"></i>Agendar Diagnóstico Gratuito
+          </a>
+          <p class="diagnostico-cta-note">Clique acima e escolha o melhor horário. Nossa equipe entrará em contato!</p>
+          <div class="diagnostico-empresa">
+            <strong>Âncora Consultoria Financeira</strong><br/>
+            <span>Transformando finanças, construindo futuros.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /app -->
+
+<!-- ══ MODAL PRODUTO ══ -->
+<div id="modal-produto" class="modal-ancora-overlay d-none">
+  <div class="modal-ancora">
+    <div class="modal-ancora-header">
+      <span id="modal-produto-title">Novo Produto</span>
+      <button class="modal-close" onclick="closeModal('modal-produto')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-ancora-body">
+      <input type="hidden" id="prod-edit-id" />
+      <div class="row g-2 mb-3">
+        <div class="col-4">
+          <label class="form-label-ancora">Código</label>
+          <input type="text" id="prod-codigo" class="form-control-ancora" placeholder="001..." />
+        </div>
+        <div class="col-8">
+          <label class="form-label-ancora">Nome do Produto *</label>
+          <input type="text" id="prod-nome" class="form-control-ancora" placeholder="Nome do produto..." />
+        </div>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-7">
+          <label class="form-label-ancora">Valor de Venda (R$) *</label>
+          <input type="number" id="prod-valor" class="form-control-ancora" placeholder="0,00" min="0" step="0.01" />
+        </div>
+        <div class="col-5">
+          <label class="form-label-ancora">Unidade *</label>
+          <select id="prod-unidade" class="form-control-ancora" onchange="toggleHintUnidade()">
+            <option value="un">Unidade (un)</option>
+            <option value="kg">Quilograma (kg)</option>
+          </select>
+        </div>
+      </div>
+      <div id="prod-unidade-hint" class="hint-box d-none">
+        <i class="bi bi-info-circle me-1"></i>
+        Produto por <strong>Kg</strong>: o valor é o <strong>preço/Kg</strong>. Ao inserir na venda, o peso será solicitado.
+      </div>
+    </div>
+    <div class="modal-ancora-footer">
+      <button class="btn-ancora-outline" onclick="closeModal('modal-produto')">Cancelar</button>
+      <button class="btn-ancora" onclick="salvarProduto()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL PESO ══ -->
+<div id="modal-peso" class="modal-ancora-overlay d-none">
+  <div class="modal-ancora modal-sm">
+    <div class="modal-ancora-header">
+      <span>⚖️ Informar Peso</span>
+      <button class="modal-close" onclick="closeModal('modal-peso')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-ancora-body">
+      <p id="modal-peso-desc" style="color:var(--gold);font-weight:600;margin-bottom:12px"></p>
+      <label class="form-label-ancora">Peso (Kg)</label>
+      <input type="number" id="modal-peso-valor" class="form-control-ancora" placeholder="Ex: 0.500"
+        min="0.001" step="0.001" oninput="previewPeso()" onkeydown="if(event.key==='Enter') confirmarPeso()" />
+      <div class="troco-result mt-2 d-none" id="peso-preco-preview">
+        <span>Valor calculado:</span><strong id="peso-preco-val">R$ 0,00</strong>
+      </div>
+    </div>
+    <div class="modal-ancora-footer">
+      <button class="btn-ancora-outline" onclick="closeModal('modal-peso')">Cancelar</button>
+      <button class="btn-ancora" onclick="confirmarPeso()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL CLIENTE ══ -->
+<div id="modal-cliente" class="modal-ancora-overlay d-none">
+  <div class="modal-ancora">
+    <div class="modal-ancora-header">
+      <span id="modal-cliente-title">Novo Cliente</span>
+      <button class="modal-close" onclick="closeModal('modal-cliente')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-ancora-body">
+      <input type="hidden" id="cli-edit-id" />
+      <div class="mb-3">
+        <label class="form-label-ancora">Nome *</label>
+        <input type="text" id="cli-nome" class="form-control-ancora" placeholder="Nome do cliente..." />
+      </div>
+      <div class="mb-3">
+        <label class="form-label-ancora">Telefone</label>
+        <input type="tel" id="cli-telefone" class="form-control-ancora" placeholder="48 9 9827-0394" maxlength="15" oninput="mascaraTelefone(this)" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label-ancora">Endereço</label>
+        <input type="text" id="cli-endereco" class="form-control-ancora" placeholder="Rua, número, bairro, cidade..." />
+      </div>
+    </div>
+    <div class="modal-ancora-footer">
+      <button class="btn-ancora-outline" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn-ancora" onclick="salvarCliente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL ADMIN ══ -->
+<div id="modal-admin" class="modal-ancora-overlay d-none">
+  <div class="modal-ancora modal-lg">
+    <div class="modal-ancora-header">
+      <span>⚙️ Configurações da Empresa</span>
+      <button class="modal-close" onclick="tentarFecharAdmin()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-ancora-body">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label-ancora">Nome da Empresa *</label>
+          <input type="text" id="admin-nome" class="form-control-ancora" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label-ancora">CNPJ / CPF</label>
+          <input type="text" id="admin-cnpj" class="form-control-ancora" placeholder="00.000.000/0001-00" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-ancora">Telefone</label>
+          <input type="text" id="admin-telefone" class="form-control-ancora" placeholder="(48) 99999-9999" />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-ancora">Endereço</label>
+          <input type="text" id="admin-endereco" class="form-control-ancora" placeholder="Endereço da empresa..." />
+        </div>
+        <div class="col-12 d-none">
+          <label class="form-label-ancora">Mensagem no Cupom</label>
+          <textarea id="admin-cupom-msg" class="form-control-ancora" rows="2" placeholder="Ex: Obrigado pela preferência!"></textarea>
+        </div>
+      </div>
+
+      <hr class="divider-ancora mt-3" />
+
+      <div class="pin-section">
+        <div class="pin-section-title"><i class="bi bi-shield-lock me-2"></i>Segurança — PIN de Acesso</div>
+        <div class="row g-3 mt-1">
+          <div class="col-md-4">
+            <label class="form-label-ancora">PIN Atual <span id="pin-status-label" style="color:var(--text-muted);font-weight:400"></span></label>
+            <input type="password" id="admin-pin-atual" class="form-control-ancora text-center"
+              maxlength="8" placeholder="PIN atual" style="letter-spacing:6px" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-ancora">Novo PIN (4–8 dígitos)</label>
+            <input type="password" id="admin-pin-novo" class="form-control-ancora text-center"
+              maxlength="8" placeholder="Novo PIN" style="letter-spacing:6px" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-ancora">Confirmar Novo PIN</label>
+            <input type="password" id="admin-pin-conf" class="form-control-ancora text-center"
+              maxlength="8" placeholder="Confirmar" style="letter-spacing:6px" />
+          </div>
+          <div class="col-12">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.87rem;color:var(--text)">
+              <input type="checkbox" id="admin-bloquear-rel"
+                style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer" />
+              <span>Bloquear aba de Relatórios — exige PIN para visualizar</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ancora-footer">
+      <button class="btn-ancora-outline" onclick="tentarFecharAdmin()">Cancelar</button>
+      <button class="btn-ancora" onclick="salvarAdmin()"><i class="bi bi-save me-1"></i>Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL PIN ══ -->
+<div id="modal-pin" class="modal-ancora-overlay d-none">
+  <div class="modal-ancora modal-sm">
+    <div class="modal-ancora-header">
+      <span id="pin-modal-title"><i class="bi bi-shield-lock me-2"></i>Confirmar PIN</span>
+      <button class="modal-close" onclick="cancelarPin()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-ancora-body text-center">
+      <p id="pin-modal-msg" style="color:var(--text-muted);margin-bottom:16px;font-size:0.9rem"></p>
+      <input type="password" id="pin-input-modal" class="form-control-ancora text-center"
+        maxlength="8" placeholder="••••"
+        style="max-width:160px;margin:0 auto;font-size:1.4rem;letter-spacing:10px"
+        onkeydown="if(event.key==='Enter') confirmarPin()" />
+    </div>
+    <div class="modal-ancora-footer">
+      <button class="btn-ancora-outline" onclick="cancelarPin()">Cancelar</button>
+      <button class="btn-ancora" onclick="confirmarPin()"><i class="bi bi-unlock me-1"></i>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL DIAGNÓSTICO POPUP ══ -->
+<div id="modal-diag-popup" class="modal-ancora-overlay d-none">
+  <div class="modal-ancora" style="max-width:520px">
+    <div class="modal-ancora-header">
+      <span>⚓ Uma mensagem da Âncora</span>
+      <button class="modal-close" onclick="closeModal('modal-diag-popup')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-ancora-body text-center" style="padding:28px 32px">
+      <div style="font-size:3rem;margin-bottom:12px">📊</div>
+      <h5 style="color:var(--gold);font-weight:800;margin-bottom:10px">Você sabia que a maioria das PMEs perde dinheiro sem perceber?</h5>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:22px">
+        Nossa equipe pode identificar gargalos financeiros, oportunidades tributárias e estratégias de crescimento
+        <strong style="color:var(--white)">gratuitamente</strong>, em uma reunião rápida.
+      </p>
+      <a href="https://meetings.hubspot.com/ancora-consultoria" target="_blank" class="btn-diagnostico"
+        style="font-size:0.9rem;padding:12px 28px" onclick="closeModal('modal-diag-popup')">
+        <i class="bi bi-calendar-check me-2"></i>Agendar Diagnóstico Gratuito
+      </a>
+      <p style="margin-top:14px;font-size:0.78rem;color:var(--text-muted)">Sem compromisso. 100% gratuito.</p>
+    </div>
+    <div class="modal-ancora-footer" style="justify-content:center">
+      <button class="btn-ancora-outline" onclick="closeModal('modal-diag-popup')">Fechar por agora</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div id="toast-ancora" class="toast-ancora d-none">
+  <i class="bi bi-check-circle-fill me-2" id="toast-icon"></i>
+  <span id="toast-msg">Operação realizada!</span>
+</div>
+
+<script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="lib/chartjs/chart.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

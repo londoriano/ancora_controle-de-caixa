@@ -1,0 +1,28 @@
+{
+  "name": "controle-caixa-ancora",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão de Caixa Âncora",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "author": "Âncora Consultoria Financeira",
+  "license": "ISC",
+  "build": {
+    "appId": "com.ancora.caixa",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
