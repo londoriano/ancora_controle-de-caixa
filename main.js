@@ -7,7 +7,7 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 800,
-        title: "Controle de Caixa Âncora Consultoria Financeira",
+        title: "Âncora Consultoria Financeira",
         icon: path.join(__dirname, 'icon.png'), // Opcional: Se tiver um ícone
         webPreferences: {
             nodeIntegration: false, // Segurança: Mantém isolado
