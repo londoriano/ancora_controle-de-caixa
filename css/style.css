@@ -37,7 +37,7 @@ body {
 #splash-screen {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center;
-  background: url('../img/splash-bg.svg') center/cover no-repeat, var(--navy);
+  background: url('../img/background.png') center/cover no-repeat, var(--navy);
   animation: splashIn 0.5s ease;
 }
 @keyframes splashIn { from{opacity:0} to{opacity:1} }
