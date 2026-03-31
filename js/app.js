@@ -690,22 +690,40 @@ function calcularTotais() {
   vendaAtual._desconto = desconto;
   vendaAtual._total    = total;
 
-  atualizarResumoPagamentos();
+  // Sincroniza o valor da(s) forma(s) de pagamento que ainda não foram editadas
+  // (valor vazio ou igual ao total anterior) para o novo total
+  if (vendaAtual.pagamentos && vendaAtual.pagamentos.length === 1) {
+    const p = vendaAtual.pagamentos[0];
+    // Atualiza sempre se há apenas uma forma (ainda não houve divisão manual)
+    p.valor = total > 0 ? parseFloat(total.toFixed(2)) : '';
+    renderPagamentos();
+  } else {
+    atualizarResumoPagamentos();
+  }
 }
 
 // ─────────────── VENDAS — PAGAMENTOS MÚLTIPLOS ───────────────
+
+// Retorna o valor que falta cobrir com os pagamentos já informados,
+// excluindo opcionalmente uma forma (usada ao trocar o método de uma linha).
+function calcularRestante(excluirId = null) {
+  const total = vendaAtual._total || 0;
+  const pago  = vendaAtual.pagamentos.reduce((s, p) => {
+    if (p.id === excluirId) return s;
+    return s + (parseFloat(p.valor) || 0);
+  }, 0);
+  return Math.max(0, total - pago);
+}
+
 function inicializarPagamentos() {
-  vendaAtual.pagamentos = [{ id: genId(), metodo: 'dinheiro', valor: '' }];
+  const total = vendaAtual._total || 0;
+  vendaAtual.pagamentos = [{ id: genId(), metodo: 'dinheiro', valor: total > 0 ? parseFloat(total.toFixed(2)) : '' }];
   renderPagamentos();
 }
 
 function adicionarFormaPagamento() {
-  const total = vendaAtual._total || 0;
-  const totalPago = vendaAtual.pagamentos.reduce((s, p) => s + (parseFloat(p.valor)||0), 0);
-  let restante = total - totalPago;
-
-  // Sugere automaticamente o valor que falta, economizando digitação
-  let valorSugerido = restante > 0 ? restante.toFixed(2) : '';
+  const restante = calcularRestante();
+  const valorSugerido = restante > 0 ? parseFloat(restante.toFixed(2)) : '';
 
   vendaAtual.pagamentos.push({ id: genId(), metodo: 'pix', valor: valorSugerido });
   renderPagamentos();
@@ -719,28 +737,66 @@ function removerPagamento(id) {
 
 function renderPagamentos() {
   const lista = document.getElementById('pagamentos-lista');
-  lista.innerHTML = vendaAtual.pagamentos.map((p, idx) => `
+  lista.innerHTML = vendaAtual.pagamentos.map((p, idx) => {
+    // Valor exibido no campo: usa o valor armazenado, ou vazio se for 0/falsy
+    const valorExibido = p.valor > 0 ? p.valor : '';
+    return `
     <div class="pagamento-row" id="prow-${p.id}">
       <select class="form-control-ancora" style="flex:1.4" onchange="mudarMetodoPag('${p.id}', this.value)">
         ${['dinheiro','credito','debito','pix','boleto','outro'].map(m =>
           `<option value="${m}" ${p.metodo===m?'selected':''}>${labelPag(m)}</option>`
         ).join('')}
       </select>
-      <input type="number" class="form-control-ancora" style="flex:1" placeholder="Valor Recebido R$"
-        value="${p.valor}" min="0" step="0.01"
+      <input type="number" class="form-control-ancora" style="flex:1"
+        placeholder="R$ ${formatValorSugerido(p.id)}"
+        value="${valorExibido}" min="0" step="0.01"
+        onfocus="autoPreencherValorPag('${p.id}', this)"
         onchange="mudarValorPag('${p.id}', this.value)"
         oninput="mudarValorPag('${p.id}', this.value)" />
       ${vendaAtual.pagamentos.length > 1
         ? `<button class="btn-item-del" onclick="removerPagamento('${p.id}')"><i class="bi bi-x-circle"></i></button>`
         : '<div style="width:28px"></div>'}
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   atualizarResumoPagamentos();
+}
+
+// Retorna o valor sugerido formatado para o placeholder
+function formatValorSugerido(id) {
+  const restante = calcularRestante(id);
+  const sugerido = restante > 0 ? restante : (vendaAtual._total || 0);
+  return sugerido > 0 ? sugerido.toFixed(2).replace('.', ',') : '0,00';
+}
+
+// Ao focar no campo de valor: se estiver vazio, preenche com o valor sugerido
+function autoPreencherValorPag(id, input) {
+  if (input.value !== '' && parseFloat(input.value) > 0) return; // já preenchido pelo usuário
+  const p = vendaAtual.pagamentos.find(x => x.id === id);
+  if (!p) return;
+  const restante = calcularRestante(id);
+  const sugerido = restante > 0 ? restante : (vendaAtual._total || 0);
+  if (sugerido > 0) {
+    const val = parseFloat(sugerido.toFixed(2));
+    p.valor = val;
+    input.value = val;
+    atualizarResumoPagamentos();
+    // Seleciona o texto para facilitar substituição rápida
+    input.select();
+  }
 }
 
 function mudarMetodoPag(id, metodo) {
   const p = vendaAtual.pagamentos.find(x => x.id === id);
-  if (p) { p.metodo = metodo; renderPagamentos(); }
+  if (!p) return;
+  p.metodo = metodo;
+  // Sempre preenche com o valor sugerido ao trocar o método:
+  // usa o "falta pagar" excluindo essa linha, ou o total se for a única forma
+  const restante = calcularRestante(id);
+  const sugerido = restante > 0 ? restante : (vendaAtual._total || 0);
+  if (sugerido > 0) {
+    p.valor = parseFloat(sugerido.toFixed(2));
+  }
+  renderPagamentos();
 }
 
 function mudarValorPag(id, val) {
