@@ -457,3 +457,100 @@ textarea.form-control-ancora { resize:vertical; min-height:60px; }
   .diagnostico-card { padding:28px 20px; }
   .pagamento-row { flex-wrap:wrap; }
 }
+
+/* ══ BOTÃO AJUDA (?) ══ */
+.btn-help-info {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--gold);
+  font-size: 1rem;
+  opacity: 0.75;
+  transition: opacity 0.2s, transform 0.2s;
+  line-height: 1;
+}
+.btn-help-info:hover { opacity: 1; transform: scale(1.15); }
+
+/* ══ MODAL AJUDA — ITENS ══ */
+.help-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.help-item:last-child { border-bottom: none; }
+.help-item > i {
+  font-size: 1.3rem;
+  color: var(--gold);
+  min-width: 24px;
+  margin-top: 2px;
+}
+.help-item strong { display: block; color: var(--white); margin-bottom: 4px; }
+.help-item p { color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5; }
+kbd {
+  background: var(--navy-light);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.78rem;
+  color: var(--gold);
+  font-family: monospace;
+}
+
+/* ══ COLLAPSIBLE INFORMAÇÕES DA VENDA ══ */
+#info-venda-body {
+  transition: none;
+}
+#info-venda-chevron {
+  font-size: 0.85rem;
+}
+
+/* ══ BADGE ESTOQUE ══ */
+.badge-estoque {
+  display: inline-block;
+  background: var(--navy-light);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 38px;
+  text-align: center;
+}
+.badge-estoque-alerta {
+  background: rgba(255, 107, 53, 0.15);
+  border-color: #ff6b35;
+  color: #ff6b35;
+  animation: pulseAlerta 2s infinite;
+}
+@keyframes pulseAlerta {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,53,0.3); }
+  50%       { box-shadow: 0 0 0 5px rgba(255,107,53,0); }
+}
+
+/* ══ LINHA DE PRODUTO EM ALERTA ══ */
+tr.produto-alerta {
+  background: rgba(255, 107, 53, 0.06) !important;
+  border-left: 3px solid #ff6b35;
+}
+tr.produto-alerta td:first-child {
+  border-left: 3px solid #ff6b35;
+}
+
+.badge-alerta-label {
+  display: inline-block;
+  background: rgba(255,107,53,0.15);
+  color: #ff6b35;
+  border: 1px solid rgba(255,107,53,0.4);
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}

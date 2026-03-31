@@ -63,7 +63,10 @@
       <div class="row g-3">
         <div class="col-lg-7">
           <div class="card-ancora">
-            <div class="card-ancora-header">Itens da Venda</div>
+            <div class="card-ancora-header d-flex justify-content-between align-items-center">
+              <span>Itens da Venda</span>
+              <button class="btn-help-info" onclick="openHelpModal('itens')" title="Como usar"><i class="bi bi-question-circle-fill"></i></button>
+            </div>
             <div class="card-ancora-body">
 
               <div class="row g-2 mb-2">
@@ -120,8 +123,14 @@
 
         <div class="col-lg-5">
           <div class="card-ancora mb-3">
-            <div class="card-ancora-header">Informações da Venda</div>
-            <div class="card-ancora-body">
+            <div class="card-ancora-header d-flex justify-content-between align-items-center" style="cursor:pointer" onclick="toggleInfoVenda()">
+              <span>Informações da Venda</span>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn-help-info" onclick="event.stopPropagation();openHelpModal('info')" title="Como usar"><i class="bi bi-question-circle-fill"></i></button>
+                <i class="bi bi-chevron-down" id="info-venda-chevron" style="transition:transform 0.3s;color:var(--text-muted)"></i>
+              </div>
+            </div>
+            <div class="card-ancora-body" id="info-venda-body" style="display:none">
               <div class="mb-3">
                 <label class="form-label-ancora">Cliente (opcional)</label>
                 <select id="venda-cliente" class="form-control-ancora"><option value="">— Consumidor Final —</option></select>
@@ -139,7 +148,10 @@
           </div>
 
           <div class="card-ancora mb-3">
-            <div class="card-ancora-header">Resumo</div>
+            <div class="card-ancora-header d-flex justify-content-between align-items-center">
+              <span>Resumo</span>
+              <button class="btn-help-info" onclick="openHelpModal('resumo')" title="Como usar"><i class="bi bi-question-circle-fill"></i></button>
+            </div>
             <div class="card-ancora-body">
               <div class="resumo-linha"><span>Subtotal</span><span id="resumo-subtotal">R$ 0,00</span></div>
               <div class="resumo-linha" style="color:var(--red)"><span>Desconto</span><span id="resumo-desconto">- R$ 0,00</span></div>
@@ -150,7 +162,10 @@
           <div class="card-ancora">
             <div class="card-ancora-header d-flex justify-content-between align-items-center">
               <span>Pagamento</span>
-              <button class="btn-add-pag" onclick="adicionarFormaPagamento()"><i class="bi bi-plus-circle me-1"></i>+ Forma</button>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn-help-info" onclick="openHelpModal('pagamento')" title="Como usar"><i class="bi bi-question-circle-fill"></i></button>
+                <button class="btn-add-pag" onclick="adicionarFormaPagamento()"><i class="bi bi-plus-circle me-1"></i>+ Forma</button>
+              </div>
             </div>
             <div class="card-ancora-body">
               <div id="pagamentos-lista"></div>
@@ -180,7 +195,7 @@
           </div></div>
           <div class="table-ancora-wrap">
             <table class="table-ancora">
-              <thead><tr><th>Código</th><th>Nome</th><th class="text-center">Unidade</th><th class="text-end">Valor de Venda</th><th class="text-center">Ações</th></tr></thead>
+              <thead><tr><th>Código</th><th>Nome</th><th class="text-center">Unidade</th><th class="text-end">Valor de Venda</th><th class="text-center">Estoque</th><th class="text-center">Ações</th></tr></thead>
               <tbody id="produtos-tbody"></tbody>
             </table>
           </div>
@@ -387,6 +402,32 @@
         <i class="bi bi-info-circle me-1"></i>
         Produto por <strong>Kg</strong>: o valor é o <strong>preço/Kg</strong>. Ao inserir na venda, o peso será solicitado.
       </div>
+
+      <hr class="divider-ancora" />
+
+      <div class="row g-2 mb-2">
+        <div class="col-6">
+          <label class="form-label-ancora">
+            <i class="bi bi-boxes me-1" style="color:var(--gold)"></i>Estoque Inicial
+            <span class="hint-tecla">opcional</span>
+          </label>
+          <input type="number" id="prod-estoque" class="form-control-ancora" placeholder="Deixe vazio = sem controle" min="0" step="1" />
+        </div>
+        <div class="col-6">
+          <label class="form-label-ancora">
+            <i class="bi bi-bell me-1" style="color:var(--gold)"></i>Destacar ao atingir
+            <span class="hint-tecla">opcional</span>
+          </label>
+          <div class="input-group">
+            <input type="number" id="prod-alerta" class="form-control-ancora" placeholder="Ex: 5" min="0" step="1" />
+            <span class="input-group-text" style="background:var(--input-bg);border-color:var(--border);color:var(--text-muted);font-size:0.78rem">un</span>
+          </div>
+        </div>
+      </div>
+      <div class="hint-box" style="margin-top:4px">
+        <i class="bi bi-info-circle me-1"></i>
+        O estoque é <strong>subtraído automaticamente</strong> a cada venda. O produto será <strong>destacado</strong> quando atingir ou ficar abaixo da quantidade informada em "Destacar ao atingir".
+      </div>
     </div>
     <div class="modal-ancora-footer">
       <button class="btn-ancora-outline" onclick="closeModal('modal-produto')">Cancelar</button>
@@ -558,6 +599,20 @@
     </div>
     <div class="modal-ancora-footer" style="justify-content:center">
       <button class="btn-ancora-outline" onclick="closeModal('modal-diag-popup')">Fechar por agora</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL AJUDA ══ -->
+<div id="modal-ajuda" class="modal-ancora-overlay d-none">
+  <div class="modal-ancora modal-lg">
+    <div class="modal-ancora-header">
+      <span id="modal-ajuda-title"><i class="bi bi-question-circle-fill me-2" style="color:var(--gold)"></i>Como usar</span>
+      <button class="modal-close" onclick="closeModal('modal-ajuda')"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-ancora-body" id="modal-ajuda-body"></div>
+    <div class="modal-ancora-footer">
+      <button class="btn-ancora" onclick="closeModal('modal-ajuda')">Entendi!</button>
     </div>
   </div>
 </div>

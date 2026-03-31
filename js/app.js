@@ -296,31 +296,41 @@ function openModalProduto(id = null) {
     document.getElementById('prod-nome').value     = p.nome;
     document.getElementById('prod-valor').value    = p.valor;
     document.getElementById('prod-unidade').value  = p.unidade  || 'un';
+    document.getElementById('prod-estoque').value  = p.estoque  != null ? p.estoque : '';
+    document.getElementById('prod-alerta').value   = p.alertaQtd != null ? p.alertaQtd : '';
   } else {
     document.getElementById('prod-codigo').value   = '';
     document.getElementById('prod-nome').value     = '';
     document.getElementById('prod-valor').value    = '';
     document.getElementById('prod-unidade').value  = 'un';
+    document.getElementById('prod-estoque').value  = '';
+    document.getElementById('prod-alerta').value   = '';
   }
   document.getElementById('prod-unidade-hint').classList.add('d-none');
   openModal('modal-produto');
 }
 
 function salvarProduto() {
-  const id      = document.getElementById('prod-edit-id').value;
-  const nome    = document.getElementById('prod-nome').value.trim();
-  const valor   = parseFloat(document.getElementById('prod-valor').value);
-  const codigo  = document.getElementById('prod-codigo').value.trim();
-  const unidade = document.getElementById('prod-unidade').value;
+  const id        = document.getElementById('prod-edit-id').value;
+  const nome      = document.getElementById('prod-nome').value.trim();
+  const valor     = parseFloat(document.getElementById('prod-valor').value);
+  const codigo    = document.getElementById('prod-codigo').value.trim();
+  const unidade   = document.getElementById('prod-unidade').value;
+  const estoqueRaw = document.getElementById('prod-estoque').value;
+  const alertaRaw  = document.getElementById('prod-alerta').value;
+  const estoque    = estoqueRaw !== '' ? parseFloat(estoqueRaw) : null;
+  const alertaQtd  = alertaRaw  !== '' ? parseFloat(alertaRaw)  : null;
 
   if (!nome)              { toast('Informe o nome do produto.', true); return; }
   if (isNaN(valor)||valor<0) { toast('Informe um valor válido.', true); return; }
 
   if (id) {
     const idx = produtos.findIndex(x => x.id === id);
-    produtos[idx] = { ...produtos[idx], nome, valor, codigo, unidade };
+    // Preserve existing estoque if not changed (when editing, keep running stock unless a new value was entered)
+    const estoqueAtual = estoqueRaw !== '' ? estoque : produtos[idx].estoque;
+    produtos[idx] = { ...produtos[idx], nome, valor, codigo, unidade, estoque: estoqueAtual, alertaQtd };
   } else {
-    produtos.push({ id: genId(), nome, valor, codigo, unidade });
+    produtos.push({ id: genId(), nome, valor, codigo, unidade, estoque, alertaQtd });
   }
   saveData('ancora_produtos', produtos);
   renderProdutos();
@@ -344,14 +354,26 @@ function renderProdutos() {
     p.nome.toLowerCase().includes(busca) || (p.codigo||'').toLowerCase().includes(busca)
   );
   if (!lista.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">
       <i class="bi bi-box-seam fs-3 d-block mb-2"></i>Nenhum produto cadastrado</td></tr>`;
     return;
   }
-  tbody.innerHTML = lista.map(p => `
-    <tr>
+  tbody.innerHTML = lista.map(p => {
+    const temEstoque   = p.estoque != null;
+    const emAlerta     = temEstoque && p.alertaQtd != null && p.estoque <= p.alertaQtd;
+    const alertaClass  = emAlerta ? 'produto-alerta' : '';
+    const estoqueHtml  = temEstoque
+      ? `<span class="badge-estoque ${emAlerta ? 'badge-estoque-alerta' : ''}" title="${emAlerta ? '⚠️ Estoque baixo!' : 'Estoque disponível'}">
+           ${emAlerta ? '<i class="bi bi-exclamation-triangle-fill me-1"></i>' : ''}${p.estoque}
+         </span>`
+      : `<span style="color:var(--text-muted);font-size:0.75rem">—</span>`;
+    return `<tr class="${alertaClass}">
       <td><span style="color:var(--text-muted);font-size:0.8rem">${p.codigo||'—'}</span></td>
-      <td>${p.nome}</td>
+      <td>
+        ${emAlerta ? '<i class="bi bi-exclamation-triangle-fill me-1" style="color:#ff6b35" title="Estoque baixo!"></i>' : ''}
+        ${p.nome}
+        ${emAlerta ? `<span class="badge-alerta-label">Estoque baixo!</span>` : ''}
+      </td>
       <td class="text-center">
         <span class="badge-unidade badge-${p.unidade||'un'}">${(p.unidade||'un').toUpperCase()}</span>
       </td>
@@ -359,12 +381,13 @@ function renderProdutos() {
         <strong style="color:var(--gold)">${formatMoeda(p.valor)}</strong>
         ${p.unidade==='kg'?'<span style="color:var(--text-muted);font-size:0.75rem">/kg</span>':''}
       </td>
+      <td class="text-center">${estoqueHtml}</td>
       <td class="text-center">
         <button class="btn-table-edit" onclick="openModalProduto('${p.id}')"><i class="bi bi-pencil"></i></button>
         <button class="btn-table-del"  onclick="excluirProduto('${p.id}')"><i class="bi bi-trash"></i></button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 // ─────────────── CLIENTES CRUD ───────────────
@@ -817,6 +840,26 @@ function finalizarVenda() {
 
   vendas.push(venda);
   saveData('ancora_vendas', vendas);
+
+  // Subtrai estoque dos produtos vendidos
+  let estoqueAtualizado = false;
+  venda.itens.forEach(item => {
+    if (!item.prodId) return;
+    const prod = produtos.find(p => p.id === item.prodId);
+    if (prod && prod.estoque != null) {
+      const qtdSubtrair = item.unidade === 'kg' ? (item.peso || 1) : item.qtd;
+      prod.estoque = Math.max(0, prod.estoque - qtdSubtrair);
+      estoqueAtualizado = true;
+    }
+  });
+  if (estoqueAtualizado) {
+    saveData('ancora_produtos', produtos);
+    // Se a aba de produtos estiver visível, re-renderiza
+    if (document.getElementById('tab-content-produtos').classList.contains('active')) {
+      renderProdutos();
+    }
+  }
+
   toast(`✅ Venda de ${formatMoeda(total)} finalizada!`);
   resetVenda();
 }
@@ -1069,6 +1112,67 @@ function restaurarBackup(event) {
   };
   
   reader.readAsText(file);
+}
+
+// ─────────────── INFORMAÇÕES DA VENDA — COLLAPSIBLE ───────────────
+function toggleInfoVenda() {
+  const body    = document.getElementById('info-venda-body');
+  const chevron = document.getElementById('info-venda-chevron');
+  const isOpen  = body.style.display !== 'none';
+  body.style.display    = isOpen ? 'none' : '';
+  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+// ─────────────── MODAL DE AJUDA ───────────────
+const helpContent = {
+  itens: {
+    titulo: '🛒 Como usar — Itens da Venda',
+    html: `
+      <p style="color:var(--text-muted);margin-bottom:16px">Esta seção é onde você monta o carrinho da venda. Veja como funciona:</p>
+      <div class="help-item"><i class="bi bi-search"></i><div><strong>Buscar Produto</strong><p>Digite o nome ou código do produto. Ele aparecerá numa lista — clique nele ou pressione <kbd>↵ Enter</kbd> para selecionar.</p></div></div>
+      <div class="help-item"><i class="bi bi-123"></i><div><strong>Qtd / Peso</strong><p>Informe a quantidade. Para produtos por <strong>Kg</strong>, um modal de peso será aberto automaticamente.</p></div></div>
+      <div class="help-item"><i class="bi bi-plus-circle"></i><div><strong>Adicionar</strong><p>Clique em "Adicionar" ou pressione <kbd>↵ Enter</kbd> no campo de quantidade para inserir o item.</p></div></div>
+      <div class="help-item"><i class="bi bi-tag"></i><div><strong>Avulso</strong><p>Para itens sem cadastro (ex: serviços), use os campos "Descrição Avulsa" e "Valor R$" e clique em "+ Avulso".</p></div></div>
+      <div class="help-item"><i class="bi bi-pencil-square"></i><div><strong>Editar quantidade</strong><p>Na tabela de itens, você pode editar a quantidade diretamente clicando no número na coluna "Qtd".</p></div></div>
+    `
+  },
+  info: {
+    titulo: '👤 Como usar — Informações da Venda',
+    html: `
+      <p style="color:var(--text-muted);margin-bottom:16px">Nesta seção você pode associar a venda a um cliente e aplicar descontos.</p>
+      <div class="help-item"><i class="bi bi-person"></i><div><strong>Cliente</strong><p>Selecione um cliente cadastrado para vincular a venda. Deixe em "Consumidor Final" para vendas avulsas sem vínculo.</p></div></div>
+      <div class="help-item"><i class="bi bi-percent"></i><div><strong>Desconto</strong><p>Informe um valor de desconto em R$ ou em %. O sistema calculará automaticamente o desconto sobre o subtotal.</p></div></div>
+      <div class="help-item"><i class="bi bi-chevron-down"></i><div><strong>Ocultar / Exibir</strong><p>Clique no cabeçalho "Informações da Venda" para ocultar ou expandir esta seção, mantendo a tela mais limpa.</p></div></div>
+    `
+  },
+  resumo: {
+    titulo: '📋 Como usar — Resumo',
+    html: `
+      <p style="color:var(--text-muted);margin-bottom:16px">O Resumo exibe os valores calculados da venda em tempo real.</p>
+      <div class="help-item"><i class="bi bi-receipt"></i><div><strong>Subtotal</strong><p>Soma de todos os itens adicionados antes do desconto.</p></div></div>
+      <div class="help-item"><i class="bi bi-dash-circle"></i><div><strong>Desconto</strong><p>Valor deduzido conforme configurado em "Informações da Venda". Mostrado em vermelho.</p></div></div>
+      <div class="help-item"><i class="bi bi-cash-stack"></i><div><strong>TOTAL</strong><p>Valor final a cobrar do cliente: Subtotal − Desconto. Este é o valor que deve ser pago.</p></div></div>
+    `
+  },
+  pagamento: {
+    titulo: '💳 Como usar — Pagamento',
+    html: `
+      <p style="color:var(--text-muted);margin-bottom:16px">Configure as formas de pagamento aceitas nesta venda.</p>
+      <div class="help-item"><i class="bi bi-credit-card"></i><div><strong>Forma de Pagamento</strong><p>Selecione o método: Dinheiro, Crédito, Débito, PIX, Boleto ou Outro. Informe o valor recebido.</p></div></div>
+      <div class="help-item"><i class="bi bi-plus-circle"></i><div><strong>+ Forma</strong><p>Para pagamentos mistos (ex: parte em dinheiro, parte no PIX), clique em "+ Forma" para adicionar outra linha.</p></div></div>
+      <div class="help-item"><i class="bi bi-arrow-repeat"></i><div><strong>Troco</strong><p>Se o valor recebido em dinheiro for maior que o total, o troco será calculado e exibido automaticamente.</p></div></div>
+      <div class="help-item"><i class="bi bi-check-circle"></i><div><strong>Finalizar Venda</strong><p>Clique em "Finalizar Venda" apenas quando todos os pagamentos estiverem registrados. O estoque será atualizado automaticamente.</p></div></div>
+    `
+  }
+};
+
+function openHelpModal(secao) {
+  const content = helpContent[secao];
+  if (!content) return;
+  document.getElementById('modal-ajuda-title').innerHTML =
+    `<i class="bi bi-question-circle-fill me-2" style="color:var(--gold)"></i>${content.titulo}`;
+  document.getElementById('modal-ajuda-body').innerHTML = content.html;
+  openModal('modal-ajuda');
 }
 
 // ─────────────── BOOT FINAL ───────────────
